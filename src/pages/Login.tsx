@@ -64,7 +64,7 @@ export default function Login() {
       </video>
       <div className="absolute inset-0 bg-[rgba(255,255,255,0.72)] backdrop-blur-[1px]" />
 
-      <div className="relative mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl items-center gap-5 lg:grid-cols-[1.05fr_0.95fr]">
+      <div className="relative mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-[1600px] items-center gap-5 lg:grid-cols-[1.15fr_0.85fr] xl:gap-8 2xl:max-w-[1720px]">
         <section className="flex flex-col gap-8 rounded-[32px] border border-white/90 bg-[rgba(255,255,255,0.88)] p-6 shadow-[0_24px_70px_-40px_rgba(15,23,42,0.3)] backdrop-blur-md lg:p-7">
           <div>
             <img

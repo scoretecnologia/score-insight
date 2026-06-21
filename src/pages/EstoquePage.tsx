@@ -39,10 +39,16 @@ export default function EstoquePage() {
   )
 
   const filteredRows = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase()
+
     return (stockRows ?? []).filter((row) => {
       const matchesQuery =
-        row.descricao.toLowerCase().includes(query.toLowerCase()) ||
-        row.ean.toLowerCase().includes(query.toLowerCase())
+        !normalizedQuery ||
+        row.descricao.toLowerCase().includes(normalizedQuery) ||
+        row.ean.toLowerCase().includes(normalizedQuery) ||
+        row.departamento.toLowerCase().includes(normalizedQuery) ||
+        row.marca.toLowerCase().includes(normalizedQuery) ||
+        row.cor.toLowerCase().includes(normalizedQuery)
       const matchesDepartment = department === 'Todos' || row.departamento === department
       return matchesQuery && matchesDepartment
     })
@@ -65,7 +71,7 @@ export default function EstoquePage() {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Buscar produto ou EAN"
+            placeholder="Buscar produto, EAN, departamento, marca ou cor"
             className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-300 focus:bg-white"
           />
           <select
@@ -98,11 +104,11 @@ export default function EstoquePage() {
           <DataTable
             rows={filteredRows}
             columns={[
-              { key: 'descricao', header: 'Produto', cell: (row) => row.descricao },
-              { key: 'departamento', header: 'Departamento', cell: (row) => row.departamento },
-              { key: 'quantidade', header: 'Qtd', cell: (row) => formatNumber(row.quantidade) },
-              { key: 'custo', header: 'Custo', cell: (row) => formatCurrency(row.custo) },
-              { key: 'valorVenda', header: 'Venda', cell: (row) => formatCurrency(row.valorVenda) },
+              { key: 'descricao', header: 'Produto', cell: (row) => row.descricao, sortValue: (row) => row.descricao },
+              { key: 'departamento', header: 'Departamento', cell: (row) => row.departamento, sortValue: (row) => row.departamento },
+              { key: 'quantidade', header: 'Qtd', cell: (row) => formatNumber(row.quantidade), sortValue: (row) => row.quantidade },
+              { key: 'custo', header: 'Custo', cell: (row) => formatCurrency(row.custo), sortValue: (row) => row.custo },
+              { key: 'valorVenda', header: 'Venda', cell: (row) => formatCurrency(row.valorVenda), sortValue: (row) => row.valorVenda },
             ]}
           />
         </Panel>

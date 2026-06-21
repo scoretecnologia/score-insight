@@ -24,7 +24,7 @@ export function AppShell() {
 
   return (
     <div className="min-h-screen bg-transparent text-slate-900">
-      <div className="mx-auto flex min-h-screen max-w-7xl flex-col px-4 py-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex min-h-screen w-full max-w-none flex-col px-4 py-4 sm:px-6 lg:px-8 2xl:px-10">
         {isImpersonating ? (
           <div className="mb-4 flex flex-col gap-3 rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-amber-900 shadow-[0_20px_45px_-36px_rgba(15,23,42,0.25)] sm:flex-row sm:items-center sm:justify-between">
             <div>

@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import { DataTable } from '@/components/dashboard/DataTable'
 import { MetricCard } from '@/components/dashboard/MetricCard'
@@ -17,6 +17,7 @@ export default function VendasPage() {
   const companyId = useDashboardFilterStore((state) => state.companyId)
   const month = useDashboardFilterStore((state) => state.month)
   const year = useDashboardFilterStore((state) => state.year)
+  const [query, setQuery] = useState('')
   const loadSales = useCallback(async () => {
     if (!accessToken) {
       throw new Error('Sessão expirada. Faça login novamente.')
@@ -45,6 +46,22 @@ export default function VendasPage() {
   }, [accessToken, companyId, month, year])
 
   const { data, isLoading, error } = useAsyncData(loadSales)
+  const filteredSales = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase()
+
+    if (!normalizedQuery) {
+      return data?.sales ?? []
+    }
+
+    return (data?.sales ?? []).filter((row) => {
+      return (
+        row.codVenda.toLowerCase().includes(normalizedQuery) ||
+        row.vendedor.toLowerCase().includes(normalizedQuery) ||
+        row.cliente.toLowerCase().includes(normalizedQuery) ||
+        row.descricao.toLowerCase().includes(normalizedQuery)
+      )
+    })
+  }, [data?.sales, query])
 
   return (
     <div className="space-y-6">
@@ -92,15 +109,31 @@ export default function VendasPage() {
       </section>
 
       <Panel title="Listagem detalhada" subtitle="Base real de vendas">
+        <div className="mb-4">
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Buscar por código, vendedor, cliente ou item"
+            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-300 focus:bg-white"
+          />
+        </div>
         <DataTable
-          rows={data?.sales ?? []}
+          rows={filteredSales}
           columns={[
-            { key: 'codVenda', header: 'Venda', cell: (row) => row.codVenda },
-            { key: 'descricao', header: 'Descrição', cell: (row) => row.descricao },
-            { key: 'vendedor', header: 'Vendedor', cell: (row) => row.vendedor },
-            { key: 'cliente', header: 'Cliente', cell: (row) => row.cliente },
-            { key: 'data', header: 'Data', cell: (row) => formatDate(row.data) },
-            { key: 'total', header: 'Total', cell: (row) => formatCurrency(row.total) },
+            { key: 'data', header: 'Data', cell: (row) => formatDate(row.data), sortValue: (row) => row.data },
+            { key: 'codVenda', header: 'Cód.', cell: (row) => row.codVenda, sortValue: (row) => row.codVenda },
+            { key: 'vendedor', header: 'Vendedor', cell: (row) => row.vendedor, sortValue: (row) => row.vendedor },
+            { key: 'cliente', header: 'Cliente', cell: (row) => row.cliente, sortValue: (row) => row.cliente },
+            { key: 'descricao', header: 'Item', cell: (row) => row.descricao, sortValue: (row) => row.descricao },
+            { key: 'quantVendida', header: 'Qtd', cell: (row) => formatNumber(row.quantVendida), sortValue: (row) => row.quantVendida },
+            { key: 'custo', header: 'Custo', cell: (row) => formatCurrency(row.custo), sortValue: (row) => row.custo },
+            { key: 'total', header: 'Total', cell: (row) => formatCurrency(row.total), sortValue: (row) => row.total },
+            {
+              key: 'lucro',
+              header: 'Lucro',
+              cell: (row) => <span className={row.lucro >= 0 ? 'text-emerald-600' : 'text-rose-600'}>{formatCurrency(row.lucro)}</span>,
+              sortValue: (row) => row.lucro,
+            },
           ]}
         />
       </Panel>
