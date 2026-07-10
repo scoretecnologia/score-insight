@@ -4,7 +4,7 @@ import { Building2, CalendarDays, ChevronDown } from 'lucide-react'
 import { useAuthStore } from '@/store/auth-store'
 import { useDashboardFilterStore } from '@/store/dashboard-filter-store'
 
-const MIN_YEAR = 2026
+const MIN_YEAR = 2024
 
 const monthOptions = [
   { value: 1, label: 'Janeiro' },

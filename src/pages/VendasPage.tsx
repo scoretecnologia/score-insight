@@ -127,7 +127,7 @@ export default function VendasPage() {
             { key: 'descricao', header: 'Item', cell: (row) => row.descricao, sortValue: (row) => row.descricao },
             { key: 'quantVendida', header: 'Qtd', cell: (row) => formatNumber(row.quantVendida), sortValue: (row) => row.quantVendida },
             { key: 'custo', header: 'Custo', cell: (row) => formatCurrency(row.custo), sortValue: (row) => row.custo },
-            { key: 'total', header: 'Total', cell: (row) => formatCurrency(row.total), sortValue: (row) => row.total },
+            { key: 'total', header: 'Subtotal', cell: (row) => formatCurrency(row.total), sortValue: (row) => row.total },
             {
               key: 'lucro',
               header: 'Lucro',

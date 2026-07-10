@@ -84,17 +84,23 @@ export async function getSalesData(accessToken: string, companyId: string) {
 
   rows.forEach((row, index) => {
     if ('Cod Venda' in row) {
+      const quantVendida = toNumber(row['Quant Vendida'])
+      const valorUnitario = toNumber(pickValue(row, 'Valor Unitário', 'Valor Unitario'))
+      const total = valorUnitario * quantVendida
+      const custo = toNumber(row.Custo)
+      const lucro = total - custo
+
       sales.push({
         id: toNumber(row.ID) || index + 1,
         codVenda: toStringValue(row['Cod Venda']),
         descricao: toStringValue(pickValue(row, 'Descrição', 'Descricao')),
-        quantVendida: toNumber(row['Quant Vendida']),
+        quantVendida,
         vendedor: toStringValue(row.Vendedor),
         cliente: toStringValue(row.Cliente),
-        valorUnitario: toNumber(pickValue(row, 'Valor Unitário', 'Valor Unitario')),
-        total: toNumber(row.Total),
-        custo: toNumber(row.Custo),
-        lucro: toNumber(row.Lucro),
+        valorUnitario,
+        total,
+        custo,
+        lucro,
         data: toStringValue(row.Data),
         departamento: toStringValue(row.Departamento),
       })

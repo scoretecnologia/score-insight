@@ -1,13 +1,57 @@
 import type { FinanceDreDetailRow, FinanceDreRow, FinanceRow, NewCustomerRow, SalesRow, StockRow } from '@/types'
 
+function normalizeGroupName(name: string): string {
+  return (name || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 const financeGroups = {
-  receitaBruta: ['VENDAS EM...', 'VENDAS', 'RECEBIMENTO TOTAL'],
-  gastosVenda: ['CUSTOS COM FORNECEDORES (-)', 'CUSTOS TRIBUTARIOS E FINANCEIROS (-)', 'CUSTOS COM EMBALAGENS (-)', 'FRETES E ENTREGAS (-)'],
-  gastosPessoal: ['DESPESAS COM PESSOAL (-)'],
-  gastosEstrutura: ['DESPESAS ADMINISTRATIVAS (-)', 'DESPESAS FINANCEIRAS FIXAS (-)', 'DESPESAS COM MATERIAIS E EQUIPAMENTOS (-)', 'DESPESAS COM VIAGENS (-)'],
-  investimentos: ['INVESTIMENTOS EM MARKETING (-)', 'INVESTIMENTOS EM DESENVOLVIMENTO EMPRESARIAL (-)', 'INVESTIMENTOS EM BENS MATERIAIS (-)'],
-  receitasFinanceiras: ['RECEITAS FINANCEIRAS'],
-  despesasFinanceiras: ['DESPESAS FINANCEIRAS'],
+  receitaBruta: [
+    'vendas em...',
+    'vendas',
+    'recebimento total',
+  ],
+  impostos: [
+    'impostos (-)',
+    'impostos',
+  ],
+  gastosVenda: [
+    'custos com fornecedores (-)',
+    'custos com produtos (-)',
+    'custos tributarios e financeiros (-)',
+    'custos tributarios ou financeiros (-)',
+    'custos com embalagens (-)',
+    'embalagens (-)',
+    'fretes e entregas (-)',
+    'fretes e entrega (-)',
+    'bonificacoes e vendas (-)',
+    'despesas com viagens (-)',
+    'despesas de viagens (-)',
+  ],
+  gastosEstrutura: [
+    'despesas administrativas (-)',
+    'investimentos em desenvolvimento empresarial (-)',
+    'saidas nao operacionais (-)',
+    'investimentos em marketing (-)',
+    'investimentos em bens materiais (-)',
+    'despesas com materiais e equipamentos (-)',
+    'despesas com veiculos (-)',
+    'despesas financeiras fixas (-)',
+  ],
+  gastosPessoal: [
+    'despesas com pessoal (-)',
+    'pessoal (-)'
+  ],
+  receitasFinanceiras: ['receitas financeiras'],
+  despesasFinanceiras: ['despesas financeiras'],
+  impostosRendaCsll: [
+    'impostos de renda e csll',
+    'impostos de renda e csll (-)',
+  ]
 }
 
 export function getStockMetrics(rows: StockRow[]) {
@@ -32,7 +76,7 @@ export function getSalesMetrics(sales: SalesRow[], customers: NewCustomerRow[]) 
   const faturamento = sales.reduce((sum, row) => sum + row.total, 0)
   const itensVendidos = sales.reduce((sum, row) => sum + Math.max(row.quantVendida, 0), 0)
   const numeroVendas = new Set(sales.map((row) => row.codVenda)).size
-  const ticketMedio = numeroVendas ? faturamento / numeroVendas : 0
+  const ticketMedio = itensVendidos ? faturamento / itensVendidos : 0
   const pecasPorVenda = numeroVendas ? itensVendidos / numeroVendas : 0
   const clientesNovos = customers.length
 
@@ -75,12 +119,12 @@ export function getSalesMetrics(sales: SalesRow[], customers: NewCustomerRow[]) 
 
 function sumByGroup(rows: FinanceRow[], groupNames: string[]) {
   return rows
-    .filter((row) => groupNames.includes(row.totalizadora))
+    .filter((row) => groupNames.includes(normalizeGroupName(row.totalizadora)))
     .reduce((sum, row) => sum + row.valor, 0)
 }
 
 function buildGroupDetails(rows: FinanceRow[], groupNames: string[]) {
-  const groupRows = rows.filter((row) => groupNames.includes(row.totalizadora))
+  const groupRows = rows.filter((row) => groupNames.includes(normalizeGroupName(row.totalizadora)))
   const groupTotal = groupRows.reduce((sum, row) => sum + row.valor, 0)
 
   return Object.values(
@@ -128,53 +172,77 @@ function createDreRow(
 
 export function getFinanceMetrics(rows: FinanceRow[]) {
   const receitaBruta = sumByGroup(rows, financeGroups.receitaBruta)
+  const impostos = sumByGroup(rows, financeGroups.impostos)
+  const receitaLiquida = receitaBruta - impostos
   const gastosVenda = sumByGroup(rows, financeGroups.gastosVenda)
-  const gastosPessoal = sumByGroup(rows, financeGroups.gastosPessoal)
+  const margemBruta = receitaLiquida - gastosVenda
   const gastosEstrutura = sumByGroup(rows, financeGroups.gastosEstrutura)
-  const investimentos = sumByGroup(rows, financeGroups.investimentos)
+  const gastosPessoal = sumByGroup(rows, financeGroups.gastosPessoal)
+  
+  const resultadoOperacional = margemBruta - gastosEstrutura - gastosPessoal
+  
   const receitasFinanceiras = sumByGroup(rows, financeGroups.receitasFinanceiras)
   const despesasFinanceiras = sumByGroup(rows, financeGroups.despesasFinanceiras)
+  
+  const resultadoAntesIrCsll = resultadoOperacional + receitasFinanceiras - despesasFinanceiras
+  const impostosRendaCsll = sumByGroup(rows, financeGroups.impostosRendaCsll)
+  const resultadoFinal = resultadoAntesIrCsll - impostosRendaCsll
 
+  // Aliases for compatibility
   const gastosOperacionaisFixos = gastosPessoal + gastosEstrutura
-  const totalDespesas = gastosVenda + gastosOperacionaisFixos + investimentos
-  const margemContribuicao = receitaBruta - gastosVenda
+  const totalDespesas = gastosVenda + gastosEstrutura + gastosPessoal + despesasFinanceiras
+  const margemContribuicao = margemBruta
   const margemContribuicaoPercentual = receitaBruta ? margemContribuicao / receitaBruta : 0
-  const lucroAntesInvestimentos = margemContribuicao - gastosOperacionaisFixos
-  const lucroAposInvestimentos = lucroAntesInvestimentos - investimentos
-  const saldoLiquidoCaixa = lucroAposInvestimentos + receitasFinanceiras - despesasFinanceiras
+  const lucroAntesProLabore = resultadoOperacional
+  const lucroAposInvestimentos = resultadoOperacional
+  const saldoLiquidoCaixa = resultadoFinal
 
   const composition = [
     { label: 'Gastos da venda', value: gastosVenda },
     { label: 'Pessoal', value: gastosPessoal },
     { label: 'Estrutura', value: gastosEstrutura },
-    { label: 'Investimentos', value: investimentos },
+    { label: 'Despesas financeiras', value: despesasFinanceiras },
   ].filter((item) => item.value > 0)
 
   const dre = [
-    createDreRow('receita-operacional', 'Receitas Operacionais', '(+)', receitaBruta, receitaBruta, 'income', buildGroupDetails(rows, financeGroups.receitaBruta)),
-    createDreRow('gastos-venda', 'Gastos da Venda', '(-)', gastosVenda, receitaBruta, 'expense', buildGroupDetails(rows, financeGroups.gastosVenda)),
-    createDreRow('margem-contribuicao', 'Margem de Contribuição', '(=)', margemContribuicao, receitaBruta, 'result'),
-    createDreRow('gastos-pessoal', 'Gastos com Pessoal', '(-)', gastosPessoal, receitaBruta, 'expense', buildGroupDetails(rows, financeGroups.gastosPessoal)),
-    createDreRow('gastos-estrutura', 'Gastos de Estrutura', '(-)', gastosEstrutura, receitaBruta, 'expense', buildGroupDetails(rows, financeGroups.gastosEstrutura)),
-    createDreRow('lucro-antes-investimentos', 'Lucro Antes dos Investimentos', '(=)', lucroAntesInvestimentos, receitaBruta, 'result'),
-    createDreRow('investimentos', 'Investimentos', '(-)', investimentos, receitaBruta, 'expense', buildGroupDetails(rows, financeGroups.investimentos)),
-    createDreRow('lucro-apos-investimentos', 'Lucro Após Investimentos', '(=)', lucroAposInvestimentos, receitaBruta, 'result'),
-    createDreRow('receitas-financeiras', 'Receitas Financeiras', '(+)', receitasFinanceiras, receitaBruta, 'income', buildGroupDetails(rows, financeGroups.receitasFinanceiras)),
-    createDreRow('despesas-financeiras', 'Despesas Financeiras', '(-)', despesasFinanceiras, receitaBruta, 'expense', buildGroupDetails(rows, financeGroups.despesasFinanceiras)),
-    createDreRow('saldo-liquido', 'Saldo Líquido de Caixa', '(=)', saldoLiquidoCaixa, receitaBruta, 'highlight'),
+    createDreRow('receita-bruta', 'RECEITA BRUTA', '(+)', receitaBruta, receitaBruta, 'income', buildGroupDetails(rows, financeGroups.receitaBruta)),
+    createDreRow('impostos', 'IMPOSTOS', '(-)', impostos, receitaBruta, 'expense', buildGroupDetails(rows, financeGroups.impostos)),
+    createDreRow('receita-liquida', 'RECEITA LÍQUIDA', '(=)', receitaLiquida, receitaBruta, 'result'),
+    createDreRow('gastos-venda', 'GASTOS DA VENDA', '(-)', gastosVenda, receitaBruta, 'expense', buildGroupDetails(rows, financeGroups.gastosVenda)),
+    createDreRow('margem-bruta', 'MARGEM BRUTA', '(=)', margemBruta, receitaBruta, 'result'),
+    createDreRow('gastos-estrutura', 'GASTOS DA ESTRUTURA', '(-)', gastosEstrutura, receitaBruta, 'expense', buildGroupDetails(rows, financeGroups.gastosEstrutura)),
+    createDreRow('gastos-pessoal', 'GASTOS PESSOAL', '(-)', gastosPessoal, receitaBruta, 'expense', buildGroupDetails(rows, financeGroups.gastosPessoal)),
+    createDreRow('resultado-operacional', 'RESULTADO OPERACIONAL', '(=)', resultadoOperacional, receitaBruta, 'result'),
+    createDreRow('receitas-financeiras', 'RECEITAS FINANCEIRAS', '(+)', receitasFinanceiras, receitaBruta, 'income', buildGroupDetails(rows, financeGroups.receitasFinanceiras)),
+    createDreRow('despesas-financeiras', 'DESPESAS FINANCEIRAS', '(-)', despesasFinanceiras, receitaBruta, 'expense', buildGroupDetails(rows, financeGroups.despesasFinanceiras)),
+    createDreRow('resultado-antes-ir-csll', 'RESULTADO ANTES DO IR E CSLL', '(=)', resultadoAntesIrCsll, receitaBruta, 'result'),
+    createDreRow('impostos-renda-csll', 'IMPOSTOS DE RENDA E CSLL', '(-)', impostosRendaCsll, receitaBruta, 'expense', buildGroupDetails(rows, financeGroups.impostosRendaCsll)),
+    createDreRow('resultado-final', 'RESULTADO FINAL', '(=)', resultadoFinal, receitaBruta, 'highlight'),
   ]
 
   return {
     receitaBruta,
+    impostos,
+    receitaLiquida,
     gastosVenda,
+    margemBruta,
+    gastosEstrutura,
+    gastosPessoal,
+    resultadoOperacional,
+    receitasFinanceiras,
+    despesasFinanceiras,
+    resultadoAntesIrCsll,
+    impostosRendaCsll,
+    resultadoFinal,
+    composition,
+    dre,
+    // Aliases for retrocompatibility
     gastosOperacionaisFixos,
     totalDespesas,
     margemContribuicao,
     margemContribuicaoPercentual,
-    lucroAntesInvestimentos,
+    lucroAntesProLabore,
     lucroAposInvestimentos,
     saldoLiquidoCaixa,
-    composition,
-    dre,
   }
 }

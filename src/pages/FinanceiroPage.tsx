@@ -42,15 +42,11 @@ export default function FinanceiroPage() {
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <MetricCard label="Receita bruta" value={data ? formatCurrency(data.receitaBruta) : '...'} helper="Entradas operacionais do período" />
-        <MetricCard
-          label="Margem de contribuição"
-          value={data ? formatCurrency(data.margemContribuicao) : '...'}
-          helper={data ? formatPercent(data.margemContribuicaoPercentual) : 'Carregando'}
-        />
-        <MetricCard label="Gastos operacionais fixos" value={data ? formatCurrency(data.gastosOperacionaisFixos) : '...'} helper="Pessoal e estrutura" />
-        <MetricCard label="Total de despesas" value={data ? formatCurrency(data.totalDespesas) : '...'} helper="Venda, estrutura e investimentos" />
-        <MetricCard label="Lucro após investimentos" value={data ? formatCurrency(data.lucroAposInvestimentos) : '...'} helper="Resultado antes do financeiro" />
-        <MetricCard label="Saldo líquido de caixa" value={data ? formatCurrency(data.saldoLiquidoCaixa) : '...'} helper="Resultado final estimado" />
+        <MetricCard label="Receita líquida" value={data ? formatCurrency(data.receitaLiquida) : '...'} helper="Receita bruta deduzida de impostos" />
+        <MetricCard label="Margem bruta" value={data ? formatCurrency(data.margemBruta) : '...'} helper="Receita líquida menos gastos da venda" />
+        <MetricCard label="Resultado operacional" value={data ? formatCurrency(data.resultadoOperacional) : '...'} helper="Lucro antes do financeiro e tributos" />
+        <MetricCard label="Despesas financeiras" value={data ? formatCurrency(data.despesasFinanceiras) : '...'} helper="Juros, tarifas e estornos" />
+        <MetricCard label="Resultado final" value={data ? formatCurrency(data.resultadoFinal) : '...'} helper="Saldo líquido de caixa" />
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
@@ -67,11 +63,11 @@ export default function FinanceiroPage() {
               {data.dre
                 .filter((item) =>
                   [
-                    'receita-operacional',
-                    'margem-contribuicao',
-                    'lucro-antes-investimentos',
-                    'lucro-apos-investimentos',
-                    'saldo-liquido',
+                    'receita-bruta',
+                    'receita-liquida',
+                    'margem-bruta',
+                    'resultado-operacional',
+                    'resultado-final',
                   ].includes(item.id)
                 )
                 .map((item) => (
