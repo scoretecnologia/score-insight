@@ -171,6 +171,8 @@ function createDreRow(
 }
 
 export function getFinanceMetrics(rows: FinanceRow[]) {
+  console.log("FINANCE_ROWS_INSPECT:", JSON.stringify(rows))
+  console.log("UNIQUE_TOTALIZADORAS:", Array.from(new Set(rows.map(r => r.totalizadora))))
   const receitaBruta = sumByGroup(rows, financeGroups.receitaBruta)
   const impostos = sumByGroup(rows, financeGroups.impostos)
   const receitaLiquida = receitaBruta - impostos
