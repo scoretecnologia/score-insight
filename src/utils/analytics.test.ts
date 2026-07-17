@@ -18,6 +18,34 @@ describe('analytics', () => {
     expect(metrics.numeroVendas).toBe(8)
     expect(metrics.clientesNovos).toBe(4)
     expect(metrics.faturamento).toBeCloseTo(2968.4, 1)
+    expect(metrics.itensVendidos).toBe(16)
+    expect(metrics.ticketMedio).toBeCloseTo(371.05, 1)
+  })
+
+  it('calcula metricas de vendas com devolucoes (valores negativos)', () => {
+    const salesWithReturns = [
+      ...salesRows,
+      {
+        id: 9,
+        codVenda: 'V-14029',
+        descricao: 'Devolucao',
+        quantVendida: -1,
+        vendedor: 'Lucas',
+        cliente: 'Carlos Mendes',
+        valorUnitario: 100,
+        total: -100,
+        custo: 0,
+        lucro: -100,
+        data: '2026-06-16',
+        departamento: 'Camisas',
+      },
+    ]
+    const metrics = getSalesMetrics(salesWithReturns, newCustomerRows)
+
+    expect(metrics.faturamento).toBeCloseTo(2868.4, 1)
+    expect(metrics.itensVendidos).toBe(16)
+    expect(metrics.numeroVendas).toBe(8)
+    expect(metrics.ticketMedio).toBeCloseTo(358.55, 1)
   })
 
   it('calcula metricas financeiras', () => {

@@ -1,3 +1,5 @@
+import { parseBrDate } from './date'
+
 export function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -38,5 +40,9 @@ export function formatPercentCompact(value: number) {
 }
 
 export function formatDate(value: string) {
-  return new Intl.DateTimeFormat('pt-BR').format(new Date(`${value}T00:00:00`))
+  const p = parseBrDate(value)
+  if (!p) return value
+  const d = String(p.d).padStart(2, '0')
+  const m = String(p.m).padStart(2, '0')
+  return `${d}/${m}/${p.y}`
 }

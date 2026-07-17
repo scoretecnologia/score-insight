@@ -83,36 +83,44 @@ export async function getSalesData(accessToken: string, companyId: string) {
   const customers: NewCustomerRow[] = []
 
   rows.forEach((row, index) => {
-    if ('Cod Venda' in row) {
-      const quantVendida = toNumber(row['Quant Vendida'])
-      const valorUnitario = toNumber(pickValue(row, 'Valor Unitário', 'Valor Unitario'))
-      const total = valorUnitario * quantVendida
-      const custo = toNumber(row.Custo)
+    const codVendaVal = pickValue(row, 'Cod Venda', 'cod_venda', 'CodVenda', 'codVenda', 'Código Venda', 'Codigo Venda', 'Cod. Venda')
+
+    if (codVendaVal !== undefined && codVendaVal !== null && codVendaVal !== '') {
+      const quantVendida = toNumber(pickValue(row, 'Quant Vendida', 'quant_vendida', 'QuantVendida', 'quantVendida', 'Quantidade', 'quantidade', 'Qtd', 'qtd'))
+      const valorUnitario = toNumber(pickValue(row, 'Valor Unitário', 'Valor Unitario', 'valor_unitario', 'valorUnitario', 'Valor Unit', 'valor_unit'))
+      const totalVal = pickValue(row, 'Total', 'total', 'Subtotal', 'Sub Total', 'subtotal', 'sub_total', 'Valor Total', 'valor_total')
+      const total = totalVal !== undefined ? toNumber(totalVal) : valorUnitario * quantVendida
+      const custo = toNumber(pickValue(row, 'Custo', 'custo'))
       const lucro = total - custo
 
       sales.push({
-        id: toNumber(row.ID) || index + 1,
-        codVenda: toStringValue(row['Cod Venda']),
-        descricao: toStringValue(pickValue(row, 'Descrição', 'Descricao')),
+        id: toNumber(pickValue(row, 'ID', 'id', 'Id')) || index + 1,
+        codVenda: toStringValue(codVendaVal),
+        descricao: toStringValue(pickValue(row, 'Descrição', 'Descricao', 'descricao', 'item', 'Item', 'Produto', 'produto')),
         quantVendida,
-        vendedor: toStringValue(row.Vendedor),
-        cliente: toStringValue(row.Cliente),
+        vendedor: toStringValue(pickValue(row, 'Vendedor', 'vendedor')),
+        cliente: toStringValue(pickValue(row, 'Cliente', 'cliente')),
         valorUnitario,
         total,
         custo,
         lucro,
-        data: toStringValue(row.Data),
-        departamento: toStringValue(row.Departamento),
+        data: toStringValue(pickValue(row, 'Data', 'data', 'Data Venda', 'data_venda')),
+        departamento: toStringValue(pickValue(row, 'Departamento', 'departamento')),
       })
 
       return
     }
 
-    customers.push({
-      id: toStringValue(row.id),
-      dataCadastro: toStringValue(row.data_cadastro),
-      cliente: toStringValue(row.Cliente),
-    })
+    const dataCadastroVal = pickValue(row, 'data_cadastro', 'Data Cadastro', 'Data de Cadastro', 'dataCadastro', 'DataCadastro', 'data_cadastro_cliente')
+    const clienteVal = pickValue(row, 'Cliente', 'cliente')
+
+    if (dataCadastroVal !== undefined || clienteVal !== undefined) {
+      customers.push({
+        id: toStringValue(pickValue(row, 'id', 'ID', 'Id')) || `cust-${index}`,
+        dataCadastro: toStringValue(dataCadastroVal || ''),
+        cliente: toStringValue(clienteVal || ''),
+      })
+    }
   })
 
   return { sales, customers }

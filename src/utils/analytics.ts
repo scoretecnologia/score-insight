@@ -54,6 +54,8 @@ const financeGroups = {
   ]
 }
 
+import { parseBrDate } from './date'
+
 export function getStockMetrics(rows: StockRow[]) {
   const custoTotal = rows.reduce((sum, row) => sum + row.quantidade * row.custo, 0)
   const valorVendaTotal = rows.reduce((sum, row) => sum + row.quantidade * row.valorVenda, 0)
@@ -74,9 +76,11 @@ export function getStockMetrics(rows: StockRow[]) {
 
 export function getSalesMetrics(sales: SalesRow[], customers: NewCustomerRow[]) {
   const faturamento = sales.reduce((sum, row) => sum + row.total, 0)
-  const itensVendidos = sales.reduce((sum, row) => sum + Math.max(row.quantVendida, 0), 0)
-  const numeroVendas = new Set(sales.map((row) => row.codVenda)).size
-  const ticketMedio = itensVendidos ? faturamento / itensVendidos : 0
+  const positiveSales = sales.filter((row) => row.quantVendida > 0)
+  const itensVendidos = positiveSales.reduce((sum, row) => sum + row.quantVendida, 0)
+  const numeroVendas = new Set(positiveSales.map((row) => row.codVenda)).size
+
+  const ticketMedio = numeroVendas ? faturamento / numeroVendas : 0
   const pecasPorVenda = numeroVendas ? itensVendidos / numeroVendas : 0
   const clientesNovos = customers.length
 
@@ -98,8 +102,10 @@ export function getSalesMetrics(sales: SalesRow[], customers: NewCustomerRow[]) 
 
   const vendasPorDia = Object.values(
     sales.reduce<Record<string, { label: string; value: number }>>((acc, row) => {
-      acc[row.data] ??= { label: row.data.slice(8, 10), value: 0 }
-      acc[row.data].value += row.total
+      const parsed = parseBrDate(row.data)
+      const dia = parsed ? String(parsed.d).padStart(2, '0') : '01'
+      acc[dia] ??= { label: dia, value: 0 }
+      acc[dia].value += row.total
       return acc
     }, {})
   ).sort((a, b) => Number(a.label) - Number(b.label))

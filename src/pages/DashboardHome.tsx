@@ -9,6 +9,7 @@ import { getFinanceRows, getSalesData, getStockRows } from '@/lib/dashboard-api'
 import { useAuthStore } from '@/store/auth-store'
 import { useDashboardFilterStore } from '@/store/dashboard-filter-store'
 import { getFinanceMetrics, getSalesMetrics, getStockMetrics } from '@/utils/analytics'
+import { inMonth } from '@/utils/date'
 import { formatCurrency, formatNumber } from '@/utils/format'
 
 const shortcuts = [
@@ -53,15 +54,9 @@ export default function DashboardHome() {
       getFinanceRows(accessToken, month, year, companyId),
     ])
 
-    const filteredSales = salesData.sales.filter((row) => {
-      const date = new Date(`${row.data}T00:00:00`)
-      return date.getMonth() + 1 === month && date.getFullYear() === year
-    })
+    const filteredSales = salesData.sales.filter((row) => inMonth(row.data, month, year))
 
-    const filteredCustomers = salesData.customers.filter((row) => {
-      const date = new Date(`${row.dataCadastro}T00:00:00`)
-      return date.getMonth() + 1 === month && date.getFullYear() === year
-    })
+    const filteredCustomers = salesData.customers.filter((row) => inMonth(row.dataCadastro, month, year))
 
     return {
       stockMetrics: getStockMetrics(stockRows),

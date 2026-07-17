@@ -10,6 +10,7 @@ import { getSalesData } from '@/lib/dashboard-api'
 import { useAuthStore } from '@/store/auth-store'
 import { useDashboardFilterStore } from '@/store/dashboard-filter-store'
 import { getSalesMetrics } from '@/utils/analytics'
+import { inMonth } from '@/utils/date'
 import { formatCompactThousands, formatCurrency, formatDate, formatNumber } from '@/utils/format'
 
 export default function VendasPage() {
@@ -28,15 +29,9 @@ export default function VendasPage() {
     }
 
     const result = await getSalesData(accessToken, companyId)
-    const filteredSales = result.sales.filter((row) => {
-      const date = new Date(`${row.data}T00:00:00`)
-      return date.getMonth() + 1 === month && date.getFullYear() === year
-    })
+    const filteredSales = result.sales.filter((row) => inMonth(row.data, month, year))
 
-    const filteredCustomers = result.customers.filter((row) => {
-      const date = new Date(`${row.dataCadastro}T00:00:00`)
-      return date.getMonth() + 1 === month && date.getFullYear() === year
-    })
+    const filteredCustomers = result.customers.filter((row) => inMonth(row.dataCadastro, month, year))
 
     return {
       sales: filteredSales,
