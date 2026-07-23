@@ -71,7 +71,7 @@ export default function VendasPage() {
         <MetricCard label="Itens vendidos" value={data ? formatNumber(data.metrics.itensVendidos) : '...'} helper="Volume total de peças" />
         <MetricCard label="Nº de vendas" value={data ? formatNumber(data.metrics.numeroVendas) : '...'} helper="Total de cupons distintos" />
         <MetricCard label="Ticket médio" value={data ? formatCurrency(data.metrics.ticketMedio) : '...'} helper="Faturamento por venda" />
-        <MetricCard label="Peças por venda" value={data ? formatNumber(Number(data.metrics.pecasPorVenda.toFixed(1))) : '...'} helper="Média de itens por cupom" />
+        <MetricCard label="Peças por venda" value={data ? formatNumber(Number(data.metrics.pecasPorVenda.toFixed(2))) : '...'} helper="Média de itens por cupom" />
         <MetricCard label="Clientes novos" value={data ? formatNumber(data.metrics.clientesNovos) : '...'} helper="Cadastros no período" />
       </section>
 

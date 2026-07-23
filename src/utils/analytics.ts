@@ -5,15 +5,21 @@ function normalizeGroupName(name: string): string {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s*\([+\-=]\)\s*/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
 }
 
 const financeGroups = {
   receitaBruta: [
+    'receita de vendas',
+    'receita de vendas (-)',
+    'receita de vendas (+)',
     'vendas em...',
     'vendas',
     'recebimento total',
+    'vendas brutas',
+    'venda de mercadorias',
   ],
   impostos: [
     'impostos (-)',
@@ -21,37 +27,70 @@ const financeGroups = {
   ],
   gastosVenda: [
     'custos com fornecedores (-)',
+    'custos com fornecedores',
     'custos com produtos (-)',
-    'custos tributarios e financeiros (-)',
-    'custos tributarios ou financeiros (-)',
+    'custos com produtos',
     'custos com embalagens (-)',
+    'custos com embalagens',
     'embalagens (-)',
+    'embalagens',
     'fretes e entregas (-)',
+    'fretes e entregas',
     'fretes e entrega (-)',
+    'fretes e entrega',
     'bonificacoes e vendas (-)',
-    'despesas com viagens (-)',
-    'despesas de viagens (-)',
+    'bonificacoes e vendas',
+    'custos tributarios e financeiros (-)',
+    'custos tributarios e financeiros',
+    'custos tributarios ou financeiros (-)',
+    'custos tributarios ou financeiros',
   ],
   gastosEstrutura: [
     'despesas administrativas (-)',
-    'investimentos em desenvolvimento empresarial (-)',
-    'saidas nao operacionais (-)',
-    'investimentos em marketing (-)',
-    'investimentos em bens materiais (-)',
+    'despesas administrativas',
     'despesas com materiais e equipamentos (-)',
+    'despesas com materiais e equipamentos',
+    'despesas com viagens (-)',
+    'despesas com viagens',
+    'despesas de viagens (-)',
+    'despesas de viagens',
+    'investimentos em desenvolvimento empresarial (-)',
+    'investimentos em desenvolvimento empresarial',
+    'investimento em desenvolvimento empresarial (-)',
+    'investimento em desenvolvimento empresarial',
+    'saidas nao operacionais (-)',
+    'saidas nao operacionais',
+    'investimentos em marketing (-)',
+    'investimentos em marketing',
+    'investimento em marketing (-)',
+    'investimento em marketing',
+    'investimentos em bens materiais (-)',
+    'investimentos em bens materiais',
+    'investimento em bens materiais (-)',
+    'investimento em bens materiais',
     'despesas com veiculos (-)',
+    'despesas com veiculos',
     'despesas financeiras fixas (-)',
+    'despesas financeiras fixas',
   ],
   gastosPessoal: [
     'despesas com pessoal (-)',
-    'pessoal (-)'
+    'despesas com pessoal',
+    'pessoal (-)',
+    'pessoal',
   ],
-  receitasFinanceiras: ['receitas financeiras'],
-  despesasFinanceiras: ['despesas financeiras'],
+  receitasFinanceiras: [
+    'receitas financeiras',
+    'receitas financeiras (+)',
+  ],
+  despesasFinanceiras: [
+    'despesas financeiras',
+    'despesas financeiras (-)',
+  ],
   impostosRendaCsll: [
     'impostos de renda e csll',
     'impostos de renda e csll (-)',
-  ]
+  ],
 }
 
 import { parseBrDate } from './date'
@@ -124,13 +163,15 @@ export function getSalesMetrics(sales: SalesRow[], customers: NewCustomerRow[]) 
 }
 
 function sumByGroup(rows: FinanceRow[], groupNames: string[]) {
+  const normalizedTargets = groupNames.map(normalizeGroupName)
   return rows
-    .filter((row) => groupNames.includes(normalizeGroupName(row.totalizadora)))
+    .filter((row) => normalizedTargets.includes(normalizeGroupName(row.totalizadora)))
     .reduce((sum, row) => sum + row.valor, 0)
 }
 
 function buildGroupDetails(rows: FinanceRow[], groupNames: string[]) {
-  const groupRows = rows.filter((row) => groupNames.includes(normalizeGroupName(row.totalizadora)))
+  const normalizedTargets = groupNames.map(normalizeGroupName)
+  const groupRows = rows.filter((row) => normalizedTargets.includes(normalizeGroupName(row.totalizadora)))
   const groupTotal = groupRows.reduce((sum, row) => sum + row.valor, 0)
 
   return Object.values(
@@ -187,7 +228,7 @@ export function getFinanceMetrics(rows: FinanceRow[]) {
   const gastosEstrutura = sumByGroup(rows, financeGroups.gastosEstrutura)
   const gastosPessoal = sumByGroup(rows, financeGroups.gastosPessoal)
   
-  const resultadoOperacional = margemBruta - gastosEstrutura - gastosPessoal
+  const resultadoOperacional = receitaBruta - gastosVenda - gastosEstrutura - gastosPessoal
   
   const receitasFinanceiras = sumByGroup(rows, financeGroups.receitasFinanceiras)
   const despesasFinanceiras = sumByGroup(rows, financeGroups.despesasFinanceiras)

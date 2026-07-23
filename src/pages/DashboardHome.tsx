@@ -49,7 +49,7 @@ export default function DashboardHome() {
     }
 
     const [stockRows, salesData, financeRows] = await Promise.all([
-      getStockRows(accessToken, companyId),
+      getStockRows(accessToken, companyId, month, year),
       getSalesData(accessToken, companyId),
       getFinanceRows(accessToken, month, year, companyId),
     ])

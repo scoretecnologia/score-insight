@@ -25,7 +25,17 @@ function getManageUsersUrl() {
   return `${supabaseUrl}/functions/v1/manage-users-new`
 }
 
-async function invokeManageUsers<T>(accessToken: string, payload: ManageUsersPayload) {
+async function invokeManageUsers<T>(fallbackAccessToken: string, payload: ManageUsersPayload) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  const accessToken = session?.access_token || fallbackAccessToken
+
+  if (!accessToken) {
+    throw new Error('Sessão expirada. Faça login novamente.')
+  }
+
   const response = await fetch(getManageUsersUrl(), {
     method: 'POST',
     headers: {
@@ -40,10 +50,14 @@ async function invokeManageUsers<T>(accessToken: string, payload: ManageUsersPay
   const data = text ? (JSON.parse(text) as AdminFunctionResponse<T>) : null
 
   if (!response.ok) {
-    const message =
+    let message =
       data && typeof data === 'object' && 'error' in data && typeof data.error === 'string'
         ? data.error
         : 'Falha ao executar a administração de usuários.'
+
+    if (message.includes('Nao foi possivel validar o usuario autenticado') || message.includes('Token de autenticacao ausente')) {
+      message = 'Sessão expirada ou inválida. Por favor, recarregue a página ou faça login novamente.'
+    }
 
     throw new Error(message)
   }

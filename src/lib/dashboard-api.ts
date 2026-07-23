@@ -1,3 +1,4 @@
+import { supabase } from '@/lib/supabase'
 import type { FinanceRow, NewCustomerRow, SalesRow, StockRow } from '@/types'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
@@ -18,7 +19,17 @@ function getFunctionUrl(slug: string, query?: Record<string, string | number>) {
   return `${supabaseUrl}/functions/v1/${slug}${queryString ? `?${queryString}` : ''}`
 }
 
-async function invokeFunction<T>(slug: string, accessToken: string, query?: Record<string, string | number>) {
+async function invokeFunction<T>(slug: string, fallbackAccessToken: string, query?: Record<string, string | number>) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  const accessToken = session?.access_token || fallbackAccessToken
+
+  if (!accessToken) {
+    throw new Error('Sessão expirada. Faça login novamente.')
+  }
+
   const response = await fetch(getFunctionUrl(slug, query), {
     method: 'GET',
     headers: {
@@ -32,10 +43,15 @@ async function invokeFunction<T>(slug: string, accessToken: string, query?: Reco
   const data = text ? (JSON.parse(text) as T | { error?: string }) : null
 
   if (!response.ok) {
-    const message =
+    let message =
       data && typeof data === 'object' && 'error' in data && typeof data.error === 'string'
         ? data.error
         : `Falha ao carregar ${slug}.`
+
+    if (message.includes('Nao foi possivel validar o usuario autenticado') || message.includes('Token de autenticacao ausente')) {
+      message = 'Sessão expirada ou inválida. Por favor, recarregue a página ou faça login novamente.'
+    }
+
     throw new Error(message)
   }
 
@@ -60,8 +76,12 @@ function pickValue(row: UnknownRecord, ...keys: string[]) {
   return undefined
 }
 
-export async function getStockRows(accessToken: string, companyId: string) {
-  const rows = await invokeFunction<UnknownRecord[]>('formen-stock_new', accessToken, { companyId })
+export async function getStockRows(accessToken: string, companyId: string, month?: number, year?: number) {
+  const query: Record<string, string | number> = { companyId }
+  if (month !== undefined) query.month = month
+  if (year !== undefined) query.year = year
+
+  const rows = await invokeFunction<UnknownRecord[]>('formen-stock_new', accessToken, query)
 
   return rows.map((row) => ({
     codigo: toNumber(row.Codigo),

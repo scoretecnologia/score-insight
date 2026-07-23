@@ -28,8 +28,8 @@ export default function EstoquePage() {
       throw new Error('Selecione uma empresa para carregar o estoque.')
     }
 
-    return getStockRows(accessToken, companyId)
-  }, [accessToken, companyId])
+    return getStockRows(accessToken, companyId, month, year)
+  }, [accessToken, companyId, month, year])
 
   const { data: stockRows, isLoading, error } = useAsyncData(loadStock)
 
